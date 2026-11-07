@@ -383,55 +383,58 @@
 <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 
 <script type="text/javascript">
+    // Teachable Machineから取得したご自身のURL
     const URL = "https://teachablemachine.withgoogle.com/models/YOUR_MODEL_ID/";
 
     let model, webcam, labelContainer, maxPredictions;
 
     async function init() {
-        const statusMsg = document.getElementById("status-message");
-        
-        // ★ 1. ボタンが押された直後に「読み込み中...」と表示する
-        statusMsg.innerHTML = "⏳ AIモデルとカメラを読み込み中です...しばらくお待ちください。";
+        const modelURL = URL + "model.json";
+        const metadataURL = URL + "metadata.json";
 
+        // 1. AIモデルとメタデータの読み込み
+        model = await tmImage.load(modelURL, metadataURL);
+        maxPredictions = model.getTotalClasses();
+
+        // 2. カメラの設定を準備（iPhone/スマホ向け）
+        const flip = false; // 外カメラなので左右反転はオフ
+        const width = 200;
+        const height = 200;
+
+        // iPhoneのSafariで外カメラを確実に起動するためのオプション指定
+        const webcamConstraints = {
+            facingMode: { exact: "environment" } // "environment" で起動しない場合は exact を使用
+        };
+
+        // tmImage.Webcam インスタンスを作成
+        webcam = new tmImage.Webcam(width, height, flip);
+
+        // setup() を実行する前にカメラオプションを設定
         try {
-            // AIモデルの読み込み
-            const modelURL = URL + "model.json";
-            const metadataURL = URL + "metadata.json";
-            model = await tmImage.load(modelURL, metadataURL);
-            maxPredictions = model.getTotalClasses();
-
-            // カメラの設定
-            const flip = false;
-            webcam = new tmImage.Webcam(200, 200, flip);
-
-            // カメラのセットアップ
             await webcam.setup({ facingMode: "environment" });
-            await webcam.play();
-            window.requestAnimationFrame(loop);
-
-            // 描画エリアの準備
-            const webcamContainer = document.getElementById("webcam-container");
-            webcamContainer.innerHTML = "";
-            webcamContainer.appendChild(webcam.canvas);
-
-            labelContainer = document.getElementById("label-container");
-            labelContainer.innerHTML = "";
-            for (let i = 0; i < maxPredictions; i++) {
-                labelContainer.appendChild(document.createElement("div"));
-            }
-
-            // ★ 2. 準備が完了したらメッセージを消す（または「起動完了」にする）
-            statusMsg.innerHTML = "";
-
         } catch (e) {
-            console.error(e);
-            // エラーやカメラの拒否があった場合の表示
-            statusMsg.innerHTML = "❌ 読み込みに失敗しました。カメラの許可を確認してください。";
+            // exact: "environment" でエラーが出た場合のフォールバック処理（PC等の場合）
+            console.log("背面カメラの固定指定に失敗したため、通常の指定で再試行します", e);
+            await webcam.setup({ facingMode: "user" });
+        }
+
+        await webcam.play();
+        window.requestAnimationFrame(loop);
+
+        // 描画エリアの更新（ボタンを連続で押したときに重複しないよう初期化）
+        const webcamContainer = document.getElementById("webcam-container");
+        webcamContainer.innerHTML = ""; 
+        webcamContainer.appendChild(webcam.canvas);
+
+        labelContainer = document.getElementById("label-container");
+        labelContainer.innerHTML = "";
+        for (let i = 0; i < maxPredictions; i++) {
+            labelContainer.appendChild(document.createElement("div"));
         }
     }
 
     async function loop() {
-        webcam.update();
+        webcam.update(); 
         await predict();
         window.requestAnimationFrame(loop);
     }
