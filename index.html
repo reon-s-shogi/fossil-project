@@ -382,7 +382,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 
 <script type="text/javascript">
-    // ★ Step 2でコピーしたご自身のURLを「" "」の中に貼り付けます
+    // Teachable Machineから取得したご自身のURL
     const URL = "https://teachablemachine.withgoogle.com/models/uCNxmcrua/";
 
     let model, webcam, labelContainer, maxPredictions;
@@ -391,18 +391,42 @@
         const modelURL = URL + "model.json";
         const metadataURL = URL + "metadata.json";
 
+        // 1. AIモデルとメタデータの読み込み
         model = await tmImage.load(modelURL, metadataURL);
         maxPredictions = model.getTotalClasses();
 
-        const flip = true; 
-        webcam = new tmImage.Webcam(200, 200, flip); 
-      webcam.webcamOptions = { facingMode: "environment" };
-        await webcam.setup(); 
+        // 2. カメラの設定を準備（iPhone/スマホ向け）
+        const flip = false; // 外カメラなので左右反転はオフ
+        const width = 200;
+        const height = 200;
+
+        // iPhoneのSafariで外カメラを確実に起動するためのオプション指定
+        const webcamConstraints = {
+            facingMode: { exact: "environment" } // "environment" で起動しない場合は exact を使用
+        };
+
+        // tmImage.Webcam インスタンスを作成
+        webcam = new tmImage.Webcam(width, height, flip);
+
+        // setup() を実行する前にカメラオプションを設定
+        try {
+            await webcam.setup({ facingMode: "environment" });
+        } catch (e) {
+            // exact: "environment" でエラーが出た場合のフォールバック処理（PC等の場合）
+            console.log("背面カメラの固定指定に失敗したため、通常の指定で再試行します", e);
+            await webcam.setup({ facingMode: "user" });
+        }
+
         await webcam.play();
         window.requestAnimationFrame(loop);
 
-        document.getElementById("webcam-container").appendChild(webcam.canvas);
+        // 描画エリアの更新（ボタンを連続で押したときに重複しないよう初期化）
+        const webcamContainer = document.getElementById("webcam-container");
+        webcamContainer.innerHTML = ""; 
+        webcamContainer.appendChild(webcam.canvas);
+
         labelContainer = document.getElementById("label-container");
+        labelContainer.innerHTML = "";
         for (let i = 0; i < maxPredictions; i++) {
             labelContainer.appendChild(document.createElement("div"));
         }
