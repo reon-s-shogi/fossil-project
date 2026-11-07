@@ -264,10 +264,10 @@
 <body>
 
   <header>
-<span class="header-tag">AI × EARTH SCIENCE RESEARCH</span>
-<h1>ディープラーニングとプログラミングを活用した<br>化石同定システムの研究開発</h1>
-<p>子供たちに地学の面白さを届けるAIプロジェクト</p>
-</header>
+    <span class="header-tag">AI × EARTH SCIENCE RESEARCH</span>
+    <h1>ディープラーニングとプログラミングを活用した<br>化石同定システムの研究開発</h1>
+    <p>子供たちに地学の面白さを届けるAIプロジェクト</p>
+  </header>
 
   <div class="container">
 
@@ -285,7 +285,6 @@
       
       <div class="fossil-gallery">
         <div class="fossil-item">
-          <!-- hotate.jpg という画像を準備して同じフォルダに配置してください -->
           <img src="hotate.jpg" alt="Mizuhopecten matumoriensis" class="fossil-img">
           <div class="fossil-info">
             <div class="fossil-title">マツモリホタテ</div>
@@ -293,29 +292,27 @@
           </div>
         </div>
         <div class="fossil-item">
-          <img src="fossil2.jpg" alt="化石サンプル" class="fossil-img" >
+          <img src="fossil2.jpg" alt="化石サンプル" class="fossil-img">
           <div class="fossil-info">
             <div class="fossil-title">マツモリツキヒ</div>
             <div class="fossil-sub">Miyagipecten matumoriennsis Masuda</div>
           </div>
         </div>
-<div class="fossil-item">
-          <img src="fossil2.jpg" alt="化石サンプル" class="fossil-img" >
+        <div class="fossil-item">
+          <img src="fossil2.jpg" alt="化石サンプル" class="fossil-img">
           <div class="fossil-info">
             <div class="fossil-title">ホタテの一種</div>
             <div class="fossil-sub">mizuhopecten sp.</div>
           </div>
         </div>
       </div>
-
     </section>
 
-<section>
-  <h2>イメージキャラクター</h2>
-<h3>fossil博士</h3>
-<center><img src="image_fossil.png"></center>
-
-</section>
+    <section>
+      <h2>イメージキャラクター</h2>
+      <h3>fossil博士</h3>
+      <center><img src="image_fossil.png"></center>
+    </section>
 
     <!-- システム内容 -->
     <section>
@@ -329,18 +326,23 @@
             <iframe src="https://scratch.mit.edu/projects/1387694056/embed" allowtransparency="true" width="485" height="402" frameborder="0" scrolling="no" allowfullscreen style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;"></iframe>
           </div>
         </div>
+        
         <div class="system-card">
           <span class="badge">Teachable Machine</span>
           <h3>fossil博士2号</h3>
           <p>優占種 <em>Mizuhopecten matumoriensis</em> の約4,000枚を含む、合計8,000枚規模の画像データでディープラーニング。割れや未クリーニングで礫が付着した実用状態の化石でも高精度に同定します。</p>
-<div style="margin-top: 15px; text-align: center;">
-    <button type="button" onclick="init()" style="padding: 10px 20px; font-weight: bold; background-color: #0066cc; color: white; border: none; border-radius: 5px; cursor: pointer;">
-      カメラを起動して化石を同定する
-    </button>
+          
+          <div style="margin-top: 15px; text-align: center;">
+            <button type="button" onclick="init()" style="padding: 10px 20px; font-weight: bold; background-color: #0066cc; color: white; border: none; border-radius: 5px; cursor: pointer;">
+              カメラを起動して化石を同定する
+            </button>
 
-    <div id="webcam-container" style="margin-top: 15px;"></div>
-    <div id="label-container" style="margin-top: 10px; font-weight: bold;"></div>
-  </div>
+            <!-- 読み込み中メッセージ表示エリア -->
+            <div id="status-message" style="margin-top: 12px; font-weight: bold; color: #0066cc;"></div>
+
+            <div id="webcam-container" style="margin-top: 15px;"></div>
+            <div id="label-container" style="margin-top: 10px; font-weight: bold;"></div>
+          </div>
         </div>
       </div>
     </section>
@@ -379,57 +381,63 @@
   <footer>
     <p>&copy; 2026 fossil博士プロジェクト All Rights Reserved.</p>
   </footer>
+
 <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
 
 <script type="text/javascript">
-    // Teachable Machineから取得したご自身のURL
     const URL = "https://teachablemachine.withgoogle.com/models/uCNxmcrua/";
 
     let model, webcam, labelContainer, maxPredictions;
 
     async function init() {
-        const modelURL = URL + "model.json";
-        const metadataURL = URL + "metadata.json";
+        const statusMsg = document.getElementById("status-message");
+        
+        // 1. ボタンを押した直後にメッセージを表示
+        statusMsg.innerHTML = "⏳ AIモデルとカメラを読み込み中です...しばらくお待ちください。";
 
-        // 1. AIモデルとメタデータの読み込み
-        model = await tmImage.load(modelURL, metadataURL);
-        maxPredictions = model.getTotalClasses();
-
-        // 2. カメラの設定を準備（iPhone/スマホ向け）
-        const flip = false; // 外カメラなので左右反転はオフ
-        const width = 200;
-        const height = 200;
-
-        // iPhoneのSafariで外カメラを確実に起動するためのオプション指定
-        const webcamConstraints = {
-            facingMode: { exact: "environment" } // "environment" で起動しない場合は exact を使用
-        };
-
-        // tmImage.Webcam インスタンスを作成
-        webcam = new tmImage.Webcam(width, height, flip);
-
-        // setup() を実行する前にカメラオプションを設定
         try {
-            await webcam.setup({ facingMode: "environment" });
+            const modelURL = URL + "model.json";
+            const metadataURL = URL + "metadata.json";
+
+            // AIモデルとメタデータの読み込み
+            model = await tmImage.load(modelURL, metadataURL);
+            maxPredictions = model.getTotalClasses();
+
+            // カメラの設定（スマホ外カメラ指定）
+            const flip = false;
+            const width = 200;
+            const height = 200;
+
+            webcam = new tmImage.Webcam(width, height, flip);
+
+            try {
+                await webcam.setup({ facingMode: "environment" });
+            } catch (e) {
+                console.log("背面カメラの固定指定に失敗したため、通常の指定で再試行します", e);
+                await webcam.setup({ facingMode: "user" });
+            }
+
+            await webcam.play();
+            window.requestAnimationFrame(loop);
+
+            // 描画エリアの更新
+            const webcamContainer = document.getElementById("webcam-container");
+            webcamContainer.innerHTML = ""; 
+            webcamContainer.appendChild(webcam.canvas);
+
+            labelContainer = document.getElementById("label-container");
+            labelContainer.innerHTML = "";
+            for (let i = 0; i < maxPredictions; i++) {
+                labelContainer.appendChild(document.createElement("div"));
+            }
+
+            // 2. 準備が完了したらメッセージを消去
+            statusMsg.innerHTML = "";
+
         } catch (e) {
-            // exact: "environment" でエラーが出た場合のフォールバック処理（PC等の場合）
-            console.log("背面カメラの固定指定に失敗したため、通常の指定で再試行します", e);
-            await webcam.setup({ facingMode: "user" });
-        }
-
-        await webcam.play();
-        window.requestAnimationFrame(loop);
-
-        // 描画エリアの更新（ボタンを連続で押したときに重複しないよう初期化）
-        const webcamContainer = document.getElementById("webcam-container");
-        webcamContainer.innerHTML = ""; 
-        webcamContainer.appendChild(webcam.canvas);
-
-        labelContainer = document.getElementById("label-container");
-        labelContainer.innerHTML = "";
-        for (let i = 0; i < maxPredictions; i++) {
-            labelContainer.appendChild(document.createElement("div"));
+            console.error(e);
+            statusMsg.innerHTML = "❌ 読み込みに失敗しました。カメラのアクセス許可を確認してください。";
         }
     }
 
